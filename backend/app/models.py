@@ -51,7 +51,8 @@ class InventoryItem(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
-    #get ingredient name
+    #get ingredient name and keep as an attribute 
+    #back propogate means you can find items from ingredients
     ingredient = relationship("Ingredient", back_populates="inventory_items")
     
     #GENERAL constraints/table rules - can grow later
