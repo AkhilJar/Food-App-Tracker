@@ -1,8 +1,6 @@
-from fastapi import Depends, FastAPI
-from sqlalchemy import text
-from sqlalchemy.orm import Session
+from fastapi import FastAPI
 
-from app.database import get_db
+from app.routers import inventory
 
 app = FastAPI(title="Food Tracker API")
 
@@ -12,7 +10,4 @@ def health_check():
     return {"status": "ok"}
 
 
-@app.get("/db-check")
-def db_check(db: Session = Depends(get_db)):
-    result = db.execute(text("SELECT 1")).scalar()
-    return {"database": "connected", "result": result}
+app.include_router(inventory.router)
