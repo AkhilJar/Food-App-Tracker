@@ -65,3 +65,12 @@ class InventoryItemRead(BaseModel):
     is_deleted: bool
     created_at: datetime
     updated_at: datetime
+
+    # Validation for updating an item (all fields optional)
+class InventoryItemUpdate(BaseModel):
+    custom_name: Optional[str] = Field(default=None, max_length=200)
+    quantity: Optional[Decimal] = Field(default=None, gt=0, max_digits=10, decimal_places=2)
+    unit: Optional[Unit] = None
+    location: Optional[Location] = None
+    expiry_date: Optional[date] = None
+    
