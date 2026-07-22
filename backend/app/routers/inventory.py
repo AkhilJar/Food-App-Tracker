@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db #session
 from app.models import Ingredient, InventoryItem #SQL Alchemy ORM
-from app.schemas import InventoryItemCreate, InventoryItemRead #API schemas
+from app.schemas import InventoryItemCreate, InventoryItemRead, InventoryItemUpdate #API schemas
 
 #routes under /inventory
 router = APIRouter(prefix="/inventory", tags=["inventory"])
@@ -93,3 +93,49 @@ def soft_delete_inventory_item(item_id: UUID, db: Session = Depends(get_db)):
     item.is_deleted = True
     db.commit()
     return None
+
+ # GET /inventory/{item_id} - Get a single item by ID
+@router.get("/{item_id}", response_model=InventoryItemRead)
+def get_inventory_item(item_id: UUID, db: Session = Depends(get_db)):
+    stmt = (
+        select(InventoryItem)
+        .options(joinedload(InventoryItem.ingredient))
+        .where(InventoryItem.id == item_id, InventoryItem.is_deleted == False)
+    )
+    item = db.execute(stmt).scalar_one_or_none()
+
+    if item is None:
+        raise HTTPException(status_code=404, detail="Inventory item not found")
+
+    return item
+
+
+# PATCH /inventory/{item_id} - Update an item
+@router.patch("/{item_id}", response_model=InventoryItemRead)
+def update_inventory_item(
+    item_id: UUID, 
+    payload: InventoryItemUpdate, 
+    db: Session = Depends(get_db)
+):
+    stmt = (
+        select(InventoryItem)
+        .options(joinedload(InventoryItem.ingredient))
+        .where(InventoryItem.id == item_id, InventoryItem.is_deleted == False)
+    )
+    item = db.execute(stmt).scalar_one_or_none()
+
+    if item is None:
+        raise HTTPException(status_code=404, detail="Inventory item not found")
+
+    # Update only the fields sent in the request
+    update_data = payload.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        if hasattr(value, "value"):
+            setattr(item, key, value.value)
+        else:
+            setattr(item, key, value)
+
+    db.commit()
+    db.refresh(item)
+
+    return item   
